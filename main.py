@@ -14,4 +14,4 @@ while True:
     eth_header = packet[0][0:14]
     eth = unpack('!6s6sH', eth_header)
     network_proto = ntohs(eth[2])
-    print('Destination MAC: ' + format_mac(packet[0][0:6]) + ' Source MAC: ' + format_mac(packet[0][6:12]) + ' Protocol: ' + str(network_proto))
+    print('Destination MAC: ' + format_mac(eth[0]) + ' Source MAC: ' + format_mac(eth[1]) + ' Protocol: ' + str(network_proto))
