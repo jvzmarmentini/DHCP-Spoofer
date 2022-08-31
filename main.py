@@ -15,3 +15,8 @@ while True:
     eth = unpack('!6s6sH', eth_header)
     network_proto = ntohs(eth[2])
     print('Destination MAC: ' + format_mac(eth[0]) + ' Source MAC: ' + format_mac(eth[1]) + ' Protocol: ' + str(network_proto))
+
+    if network_proto == 8 :
+        ipv4_header = packet[0][14:34]
+        ipv4 = unpack("!12s4s4s", ipv4_header)
+        print("Source IP: " + inet_ntoa(ipv4[1]) + " Destination IP: " + inet_ntoa(ipv4[2]))
