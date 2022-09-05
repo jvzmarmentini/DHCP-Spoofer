@@ -39,8 +39,8 @@ while True:
 
         ttl = ipv4[5]
         transport_protocol = ipv4[6]
-        source_addr = inet_ntoa(ipv4[8]);
-        dest_addr = inet_ntoa(ipv4[9]);
+        source_addr = inet_ntoa(ipv4[8])
+        dest_addr = inet_ntoa(ipv4[9])
  
 #        print(f'Version: {version} IP Header Length: {ihl} ToS: {ToS} Total Lenght: {total_lenght} Identifier: {identifier} Flags: {bin(flags)[2:]} Offset: {bin(offset)} TTL: {ttl} Protocol: {transport_protocol} Source Address: {source_addr} Destination Address: {dest_addr}')
  
