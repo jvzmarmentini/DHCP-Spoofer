@@ -25,20 +25,22 @@ while True:
         version = version_ihl >> 4
         ihl = version_ihl & 0xF
 
+        header_full_lenght = ihl * 4
+
         ToS = ipv4[1] # Type of service
 
-        ipv4_length = ihl * 4
+        total_lenght = ipv4[2]
 
         identifier = ipv4[3]
         flags_offset = ipv4[4]
 
         flags = flags_offset >> 13
-        offset = flags_offset & 0xF #TODO TA ERRADO
- 
+        offset = flags_offset << 3 #TODO NÃO FUNCIONA
+
         ttl = ipv4[5]
         transport_protocol = ipv4[6]
         source_addr = inet_ntoa(ipv4[8]);
         dest_addr = inet_ntoa(ipv4[9]);
  
-        print(f'Version: {version} IP Header Length: {ihl} ToS: {ToS} Total Lenght: {ipv4_length} Identifier: {identifier} Flags: {flags} Offset: {offset} TTL: {ttl} Protocol: {transport_protocol} Source Address: {source_addr} Destination Address: {dest_addr}')
+#        print(f'Version: {version} IP Header Length: {ihl} ToS: {ToS} Total Lenght: {total_lenght} Identifier: {identifier} Flags: {bin(flags)[2:]} Offset: {bin(offset)} TTL: {ttl} Protocol: {transport_protocol} Source Address: {source_addr} Destination Address: {dest_addr}')
  
