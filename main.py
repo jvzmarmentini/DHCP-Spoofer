@@ -3,6 +3,7 @@
 from socket import *
 from struct import *
 
+
 def format_mac(mac_addr):
     return ':'.join(mac_addr.hex()[i:i+2] for i in range(0, len(mac_addr.hex()), 2))
 
@@ -56,7 +57,7 @@ while True:
             print(f'Type: {type} Code: {code} Checksum: {checksum}')
 
         elif protocol == 6:
-            tcp_header = packet[0][34:54]   
+            tcp_header = packet[0][34:54]
             tcp = unpack("!HHIIBBHHH", tcp_header)
 
             source_port = tcp[0]
@@ -69,4 +70,16 @@ while True:
             checksum = tcp[7]
             urgent_pointer = tcp[8]
 
-            print(f'sPort: {source_port} dPort: {dest_port} SEQ: {seq} ACK: {ack} Header Len: {header_len} Flags: {flags} Window: {window} Checksum: {checksum} Urgent Pointer: {urgent_pointer}')          
+#            print(f'sPort: {source_port} dPort: {dest_port} SEQ: {seq} ACK: {ack} Header Len: {header_len} Flags: {flags} Window: {window} Checksum: {checksum} Urgent Pointer: {urgent_pointer}')
+
+        elif protocol == 17:
+            udp_header = packet[0][34:42]
+
+            udp = unpack('!HHHH', udp_header)
+
+            source_port = udp[0]
+            dest_port = udp[1]
+            length = udp[2]
+            checksum = udp[3]
+
+            print(f'sPort: {source_port} dPort: {dest_port} Length: {length} Checksum: {checksum}')
