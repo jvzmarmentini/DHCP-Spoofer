@@ -17,7 +17,7 @@ while True:
     eth_header = packet[0][0:14]
     eth = unpack('!6s6sH', eth_header)
     network_proto = eth[2]
-#    print('Destination MAC: ' + format_mac(eth[0]) + ' Source MAC: ' + format_mac(eth[1]) + ' Protocol: ' + str(network_proto))
+#    print('Destination MAC: ' + format_mac(eth[0]) + ' Source MAC: ' + format_mac(eth[1]) + ' Protocol: network_proto))
 
     if network_proto == 2048:
         ipv4_header = packet[0][14:34]
@@ -55,8 +55,8 @@ while True:
 
             print(f'Type: {type} Code: {code} Checksum: {checksum}')
 
-        if protocol == 6:
-            tcp_header = packet[0][42:62]
+        elif protocol == 6:
+            tcp_header = packet[0][34:54]   
             tcp = unpack("!HHIIBBHHH", tcp_header)
 
             source_port = tcp[0]
@@ -69,4 +69,4 @@ while True:
             checksum = tcp[7]
             urgent_pointer = tcp[8]
 
-            print(f'sPort: {source_port} dPort: {dest_port} SEQ: {seq} ACK: {ack} Header Len: {header_len} Flags: {flags} Window: {window} Checksum: {checksum} Urgent Pointer: {urgent_pointer}')
+            print(f'sPort: {source_port} dPort: {dest_port} SEQ: {seq} ACK: {ack} Header Len: {header_len} Flags: {flags} Window: {window} Checksum: {checksum} Urgent Pointer: {urgent_pointer}')          
