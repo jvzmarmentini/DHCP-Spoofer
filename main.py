@@ -27,20 +27,28 @@ while True:
 
         header_full_lenght = ihl * 4
 
-        ToS = ipv4[1] # Type of service
-
+        ToS = ipv4[1] 
         total_lenght = ipv4[2]
-
         identifier = ipv4[3]
-        flags_offset = ipv4[4]
 
+        flags_offset = ipv4[4]
         flags = flags_offset >> 13
-        offset = flags_offset << 3 #TODO NÃO FUNCIONA
+        offset = flags_offset & 0x7FF
 
         ttl = ipv4[5]
-        transport_protocol = ipv4[6]
+        protocol = ipv4[6]
+        checksum = ipv4[7]
         source_addr = inet_ntoa(ipv4[8])
         dest_addr = inet_ntoa(ipv4[9])
  
-#        print(f'Version: {version} IP Header Length: {ihl} ToS: {ToS} Total Lenght: {total_lenght} Identifier: {identifier} Flags: {bin(flags)[2:]} Offset: {bin(offset)} TTL: {ttl} Protocol: {transport_protocol} Source Address: {source_addr} Destination Address: {dest_addr}')
- 
+        print(f'Version: {version} IP Header Length: {ihl} ToS: {ToS} Total Lenght: {total_lenght} Identifier: {identifier} Flags: {bin(flags)} Offset: {bin(offset)} TTL: {ttl} Protocol: {protocol} Checksum: {checksum} Source Address: {source_addr} Destination Address: {dest_addr}')
+
+        if protocol == 1:
+            icmp_header = packet[0][34:42]
+        
+            icmp = unpack("!BBH4s", icmp_header)
+
+            type = icmp[0]
+            code = icmp[1]
+            checksum = icmp[2]
+            print(f'Type: {type} Code: {code} Checksum: {checksum}')
