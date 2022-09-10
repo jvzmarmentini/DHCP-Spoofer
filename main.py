@@ -11,9 +11,11 @@ def format_mac(mac_addr):
 s = socket(AF_PACKET, SOCK_RAW, ntohs(0x0003))  # ETH_P_ALL = 0x0003
 eth_len = 14
 ipv4_len = 20
+ipv6_len = 40
 icmp_len = 8
 tcp_len = 20
 udp_len = 8
+
 
 while True:
     base_len = 0
@@ -59,18 +61,18 @@ while True:
 
         if protocol == 1:
             icmp = packet[base_len:base_len+icmp_len]
-
+            base_len += icmp_len
             icmp_header = unpack("!BBH4s", icmp)
 
             type = icmp_header[0]
             code = icmp_header[1]
             checksum = icmp_header[2]
 
-            print(f'Type: {type} Code: {code} Checksum: {checksum}')
+            #print(f'Type: {type} Code: {code} Checksum: {checksum}')
 
         elif protocol == 6:
             tcp = packet[base_len:base_len+tcp_len]
-
+            base_len += tcp_len
             tcp_header = unpack("!HHIIBBHHH", tcp)
 
             source_port = tcp_header[0]
@@ -87,7 +89,7 @@ while True:
 
         elif protocol == 17:
             udp = packet[base_len:base_len+udp_len]
-
+            base_len += udp_len
             udp_header = unpack('!HHHH', udp)
 
             source_port = udp_header[0]
@@ -95,4 +97,21 @@ while True:
             length = udp_header[2]
             checksum = udp_header[3]
 
-            print(f'sPort: {source_port} dPort: {dest_port} Length: {length} Checksum: {checksum}')
+            #print(f'sPort: {source_port} dPort: {dest_port} Length: {length} Checksum: {checksum}')
+
+    elif network_proto == 34525:
+        ipv6_header = packet[base_len:base_len+ipv6_len]
+        base_len += ipv6_len
+
+        ipv6 = unpack("!4sHBB16s16s", ipv6_header)
+        version = ipv6[0] >> 28
+        traffic_class = (ipv6[0] >> 21) & 0x7F
+        flow_label = ipv6[0] & 0x1FFFFF
+        payload_len = ipv6[1]
+        next_header = ipv6[2]
+        hop_limit = ipv6[3]
+        source_address = ipv6[4]
+        destination_address = ipv6[5]
+
+        print(f'Version: {version} Traffic class: {traffic_class} Flow label: {flow_label} Payload length: {payload_len} Next header: {next_header} Hop limit: {hop_limit} Source address: {source_address} Destination address: {destination_address}')
+
