@@ -1,25 +1,43 @@
-from base64 import decode
-import struct
+from struct import Struct
 from typing import Dict
 
 
 class Protocols():
-    UDP_HEADER = struct.Struct("!4H")
-    DNS_HEADER = struct.Struct("!6H")
+    TCP_HEADER = Struct("!2H2I2B3H")
+    UDP_HEADER = Struct("!4H")
+    DNS_HEADER = Struct("!6H")
 
     @staticmethod
-    def decode_udp(message) -> Dict:
+    def decode_tcp(message, offset: int) -> Dict:
+        tcp_header = Protocols.TCP_HEADER.unpack_from(message)
+        source_port, dest_port, seq, ack, header_len, flags, window, checksum, urgent_pointer = tcp_header
+        header_len = header_len >> 4
+        
+        result = {"source_port": source_port,
+                  "dest_port": dest_port,
+                  "seq": seq,
+                  "ack": ack,
+                  "header_len": header_len,
+                  "flags": flags,
+                  "window": window,
+                  "checksum": checksum,
+                  "urgent_pointer": urgent_pointer}
+        
+        return result
+
+    @staticmethod
+    def decode_udp(message, offset: int) -> Dict:
         udp_header = Protocols.UDP_HEADER.unpack_from(message)
         source_port, dest_port, length, chekcsum = udp_header
         result = {"source_port": source_port,
                   "dest_port": dest_port,
                   "length": length,
                   "checksum": chekcsum}
-        
+
         offset = Protocols.UDP_HEADER.size
         if source_port == 53:
-            result.update({"DNS":Protocols.decode_dns(message, offset)})
-            
+            result.update({"DNS": Protocols.decode_dns(message, offset)})
+
         return result
 
     @staticmethod
@@ -37,17 +55,19 @@ class Protocols():
         z = (misc & 0x70) >> 4
         rcode = misc & 0xF
 
-        return {"id": dnsid,
-                "is_response": qr,
-                "opcode": opcode,
-                "is_authoritative": aa,
-                "is_truncated": tc,
-                "recursion_desired": rd,
-                "recursion_available": ra,
-                "reserved": z,
-                "response_code": rcode,
-                "question_count": qdcount,
-                "answer_count": ancount,
-                "authority_count": nscount,
-                "additional_count": arcount,
-                "questions": "not supported"}
+        result = {"id": dnsid,
+                  "is_response": qr,
+                  "opcode": opcode,
+                  "is_authoritative": aa,
+                  "is_truncated": tc,
+                  "recursion_desired": rd,
+                  "recursion_available": ra,
+                  "reserved": z,
+                  "response_code": rcode,
+                  "question_count": qdcount,
+                  "answer_count": ancount,
+                  "authority_count": nscount,
+                  "additional_count": arcount,
+                  "questions": "not supported"}
+
+        return result

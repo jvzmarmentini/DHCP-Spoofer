@@ -74,21 +74,9 @@ while True:
             #print(f'Type: {type} Code: {code} Checksum: {checksum}')
 
         elif protocol == 6:
-            tcp = packet[base_len:base_len+tcp_len]
-            base_len += tcp_len
-            tcp_header = unpack("!HHIIBBHHH", tcp)
-
-            source_port = tcp_header[0]
-            dest_port = tcp_header[1]
-            seq = tcp_header[2]
-            ack = tcp_header[3]
-            header_len = tcp_header[4] >> 4
-            flags = tcp_header[5]
-            window = tcp_header[6]
-            checksum = tcp_header[7]
-            urgent_pointer = tcp_header[8]
-
-#            print(f'sPort: {source_port} dPort: {dest_port} SEQ: {seq} ACK: {ack} Header Len: {header_len} Flags: {flags} Window: {window} Checksum: {checksum} Urgent Pointer: {urgent_pointer}')
+            tcp = packet[base_len:]
+            tcp_header = Protocols.decode_tcp(tcp)
+            print("TCP", json.dumps(tcp_header, indent=4))
 
         elif protocol == 17:
             udp = packet[base_len:]
