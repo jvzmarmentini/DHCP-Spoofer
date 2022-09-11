@@ -1,11 +1,30 @@
+from base64 import decode
 import struct
 from typing import Dict
 
 
-class DNS():
+class Protocols():
+    UDP_HEADER = struct.Struct("!4H")
+    DNS_HEADER = struct.Struct("!6H")
+
     @staticmethod
-    def decode_dns(message) -> Dict:
-        dns_header = struct.unpack("!6H", message)
+    def decode_udp(message) -> Dict:
+        udp_header = Protocols.UDP_HEADER.unpack_from(message)
+        source_port, dest_port, length, chekcsum = udp_header
+        result = {"source_port": source_port,
+                  "dest_port": dest_port,
+                  "length": length,
+                  "checksum": chekcsum}
+        
+        offset = Protocols.UDP_HEADER.size
+        if source_port == 53:
+            result.update({"DNS":Protocols.decode_dns(message, offset)})
+            
+        return result
+
+    @staticmethod
+    def decode_dns(message, offset: int) -> Dict:
+        dns_header = Protocols.DNS_HEADER.unpack_from(message, offset)
 
         dnsid, misc, qdcount, ancount, nscount, arcount = dns_header
 

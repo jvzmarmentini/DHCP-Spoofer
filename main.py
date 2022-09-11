@@ -4,7 +4,7 @@ import json
 from socket import *
 from struct import *
 
-from dns import DNS
+from protocols import Protocols
 
 
 def format_mac(mac_addr):
@@ -91,23 +91,9 @@ while True:
 #            print(f'sPort: {source_port} dPort: {dest_port} SEQ: {seq} ACK: {ack} Header Len: {header_len} Flags: {flags} Window: {window} Checksum: {checksum} Urgent Pointer: {urgent_pointer}')
 
         elif protocol == 17:
-            udp = packet[base_len:base_len+udp_len]
-            base_len += udp_len
-            udp_header = unpack('!4H', udp)
-
-            source_port = udp_header[0]
-            dest_port = udp_header[1]
-            length = udp_header[2]
-            checksum = udp_header[3]
-
-            print(
-                f'UDP - sPort: {source_port} dPort: {dest_port} Length: {length} Checksum: {checksum}')
-
-            if source_port == 53:
-                dns = packet[base_len:base_len+dns_len]
-                base_len += dns_len
-                
-                print("DNS", json.dumps(DNS.decode_dns(dns), indent=4))
+            udp = packet[base_len:]
+            udp_header = Protocols.decode_udp(udp)
+            print("UDP", json.dumps(udp_header, indent=4))
 
     elif network_proto == 34525:
         ipv6_header = packet[base_len:base_len+ipv6_len]
