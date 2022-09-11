@@ -1,7 +1,10 @@
 #!/usr/bin/python3
 
+import json
 from socket import *
 from struct import *
+
+from dns import DNS
 
 
 def format_mac(mac_addr):
@@ -15,7 +18,7 @@ ipv6_len = 40
 icmp_len = 8
 tcp_len = 20
 udp_len = 8
-
+dns_len = 12
 
 while True:
     base_len = 0
@@ -23,10 +26,10 @@ while True:
     recv = s.recvfrom(4096)
     packet = recv[0]
 
-#    print(packet, end="\n\n")
+    # print(packet, end="\n\n")
     eth = packet[base_len:eth_len]
     base_len += eth_len
-    
+
     eth_header = unpack('!6s6sH', eth)
     network_proto = eth_header[2]
 #    print('Destination MAC: ' + format_mac(eth[0]) + ' Source MAC: ' + format_mac(eth[1]) + ' Protocol: network_proto))
@@ -34,8 +37,8 @@ while True:
     if network_proto == 2048:
         ipv4 = packet[base_len:base_len+ipv4_len]
         base_len += ipv4_len
-        
-        ipv4_header = unpack("!BBHHHBBH4s4s", ipv4)
+
+        ipv4_header = unpack("!2B3H2BH4s4s", ipv4)
 
         version_ihl = ipv4_header[0]
         version = version_ihl >> 4
@@ -90,14 +93,21 @@ while True:
         elif protocol == 17:
             udp = packet[base_len:base_len+udp_len]
             base_len += udp_len
-            udp_header = unpack('!HHHH', udp)
+            udp_header = unpack('!4H', udp)
 
             source_port = udp_header[0]
             dest_port = udp_header[1]
             length = udp_header[2]
             checksum = udp_header[3]
 
-            #print(f'sPort: {source_port} dPort: {dest_port} Length: {length} Checksum: {checksum}')
+            print(
+                f'UDP - sPort: {source_port} dPort: {dest_port} Length: {length} Checksum: {checksum}')
+
+            if source_port == 53:
+                dns = packet[base_len:base_len+dns_len]
+                base_len += dns_len
+                
+                print("DNS", json.dumps(DNS.decode_dns(dns), indent=4))
 
     elif network_proto == 34525:
         ipv6_header = packet[base_len:base_len+ipv6_len]
@@ -114,4 +124,3 @@ while True:
         destination_address = ipv6[5]
 
         print(f'Version: {version} Traffic class: {traffic_class} Flow label: {flow_label} Payload length: {payload_len} Next header: {next_header} Hop limit: {hop_limit} Source address: {source_address} Destination address: {destination_address}')
-
