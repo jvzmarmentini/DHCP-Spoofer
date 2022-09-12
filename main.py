@@ -1,24 +1,32 @@
 #!/usr/bin/python3
 import argparse
-import json
 from socket import socket, AF_PACKET, SOCK_RAW, ntohs
 
 from protocols import Protocols
 
 
-def dumpclean(obj):
+def dumpclean(obj) -> None:
+    '''
+    Pretty print the decode result
+
+    Args:
+        obj (Dict): decode result
+    '''
     if isinstance(obj, dict):
-        for k, v in obj.items():
-            if isinstance(v, dict):
-                print(f"    [+]{k}")
-                dumpclean(v)
+        for key, value in obj.items():
+            if isinstance(value, dict):
+                print(f"    [+]{key}")
+                dumpclean(value)
             else:
-                print(f"\t{k}: {v}")
+                print(f"\t{key}: {value}")
     else:
         print(obj)
 
 
-def main():
+def main() -> None:
+    '''
+    Main
+    '''
     soc = socket(AF_PACKET, SOCK_RAW, ntohs(0x0003))  # ETH_P_ALL = 0x0003
 
     parser = argparse.ArgumentParser()
@@ -30,7 +38,6 @@ def main():
     display = parser.parse_args().wlist[0]
     i = 0
     while True:
-        # For best match with hardware and network realities, bufsize should be a relatively small power of 2, for example, 4096.
         packet, _ = soc.recvfrom(4096)
         eth_header = Protocols.decode_eth(packet, display)
 
