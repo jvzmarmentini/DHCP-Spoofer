@@ -5,6 +5,19 @@ from typing import Dict, List
 
 
 class Protocols():
+    '''
+    The Protocols class contains each protocol decoded support
+
+    Attributes:
+        ETH_HEADER (Struct): Ethernet header struct,
+        ARP_HEADER (Struct): ARP header struct,
+        IPV6_HEADER (Struct): IPv6 header struct,
+        IPV4_HEADER (Struct): IPv4 header struct,
+        ICMP_HEADER (Struct): ICMP header struct,
+        TCP_HEADER (Struct): TCP header struct,
+        UDP_HEADER (Struct): UDP header struct,
+        DNS_HEADER (Struct): DNS header struct,
+    '''
     ETH_HEADER = Struct("!6s6sH")
     ARP_HEADER = Struct("2s2s1s1s2s6s4s6s4s")
     IPV6_HEADER = Struct("!LHBB16s16s")
@@ -14,13 +27,99 @@ class Protocols():
     UDP_HEADER = Struct("!4H")
     DNS_HEADER = Struct("!6H")
 
+    network_access_layer = 0
+    perf_internet_layer = {"ARP": 0,
+                           "IPv4": 0,
+                           "IPv6": 0,
+                           "ICMP": 0,
+                           "ICMPv6": 0}
+    perf_transport_layer = {"TCP": 0,
+                            "UDP": 0}
+
+    alias = {7: 'ECHO',
+             19: 'CHARGEN',
+             20: 'FTP-DATA',
+             21: 'FTP-CONTROL',
+             22: 'SSH',
+             23: 'TELNET',
+             25: 'SMTP',
+             37: 'TIME',
+             53: 'DOMAIN',
+             67: 'BOOTPS (DHCP)',
+             68: 'BOOTPC (DHCP)',
+             69: 'TFTP',
+             79: 'FINGER',
+             80: 'HTTP',
+             110: 'POP3',
+             111: 'SUNRPC',
+             119: 'NNTP',
+             137: 'NETBIOS-NS',
+             128: 'NETBIOS-DGM',
+             139: 'NETBIOS-SSN',
+             143: 'IMAP',
+             161: 'SNMP',
+             162: 'SNMP-TRAP',
+             179: 'BGP',
+             389: 'LDAP',
+             443: 'HTTPS',
+             445: 'MICROSOFT-DS',
+             500: 'ISAKMP',
+             514: 'SYSLOG',
+             520: 'RIP',
+             1080: 'SOCKS',
+             33434: 'TRACEROUTE'}
+    perf_application_layer = {"BGP": 0,
+                              "BOOTPC (DHCP)": 0,
+                              "BOOTPS (DHCP)": 0,
+                              "CHARGEN": 0,
+                              "DNS": 0,
+                              "DOMAIN": 0,
+                              "ECHO": 0,
+                              "FINGER": 0,
+                              "FTP-CONTROL": 0,
+                              "FTP-DATA": 0,
+                              "HTTP": 0,
+                              "HTTPS": 0,
+                              "IMAP": 0,
+                              "ISAKMP": 0,
+                              "LDAP": 0,
+                              "MICROSOFT-DS": 0,
+                              "NETBIOS-DGM": 0,
+                              "NETBIOS-NS": 0,
+                              "NETBIOS-SSN": 0,
+                              "NNTP": 0,
+                              "POP3": 0,
+                              "RIP": 0,
+                              "SMTP": 0,
+                              "SNMP-TRAP": 0,
+                              "SNMP": 0,
+                              "SOCKS": 0,
+                              "SSH": 0,
+                              "SUNRPC": 0,
+                              "SYSLOG": 0,
+                              "TELNET": 0,
+                              "TFTP": 0,
+                              "TIME": 0,
+                              "TRACEROUTE": 0,
+                              "UNKNOWN": 0}
+
     @staticmethod
     def decode_eth(message, display: List) -> Dict:
+        '''Decode ethernet packet
+
+        Args:
+            message (bytes): The recieved data from the socket
+            display (List): Protocols whitelist to print
+
+        Returns:
+            result (Dict): The decode result
+        '''
         eth_header = Protocols.ETH_HEADER.unpack_from(message)
         dest_address, source_address, network_proto = eth_header
         dest_address = Protocols.format_mac(dest_address)
         source_address = Protocols.format_mac(source_address)
 
+        Protocols.network_access_layer += 1
         result = {}
         if "ETH" in display:
             result.update({"Destine address": dest_address,
@@ -49,21 +148,31 @@ class Protocols():
 
     @staticmethod
     def decode_arp(message, display: List, offset: int) -> Dict:
+        '''Decode ARP packet
+
+        Args:
+            message (bytes): The recieved data from the socket
+            display (List): Protocols whitelist to print
+            offset (int): Ethernet offset
+
+        Returns:
+            result (Dict): The decode result
+        '''
         arp_header = Protocols.ARP_HEADER.unpack_from(message, offset)
-        hdw_type, prot_type, hdw_type_len, prot_type_len, operation, source_hdw_addr, source_prot_addr, target_hdw_addr, target_prot_addr = arp_header
 
-        hdw_type = int.from_bytes(hdw_type, "big")
-        prot_type = int.from_bytes(prot_type, "big")
-        hdw_type_len = int.from_bytes(hdw_type_len, "big")
-        prot_type_len = int.from_bytes(prot_type_len, "big")
-        operation = int.from_bytes(operation, "big")
+        hdw_type = int.from_bytes(arp_header[0], "big")
+        prot_type = int.from_bytes(arp_header[1], "big")
+        hdw_type_len = int.from_bytes(arp_header[2], "big")
+        prot_type_len = int.from_bytes(arp_header[3], "big")
+        operation = int.from_bytes(arp_header[4], "big")
 
-        source_hdw_addr = Protocols.format_mac(source_hdw_addr)
-        target_hdw_addr = Protocols.format_mac(target_hdw_addr)
+        source_hdw_addr = Protocols.format_mac(arp_header[5])
+        target_hdw_addr = Protocols.format_mac(arp_header[7])
 
-        source_prot_addr = inet_ntoa(source_prot_addr)
-        target_prot_addr = inet_ntoa(target_prot_addr)
+        source_prot_addr = inet_ntoa(arp_header[6])
+        target_prot_addr = inet_ntoa(arp_header[8])
 
+        Protocols.perf_internet_layer["ARP"] += 1
         result = {}
         if "ARP" in display:
             result.update({"Hardware type": hdw_type,
@@ -80,6 +189,16 @@ class Protocols():
 
     @staticmethod
     def decode_ipv6(message, display: List, offset: int) -> Dict:
+        '''Decode IPv6 packet
+
+        Args:
+            message (bytes): The recieved data from the socket
+            display (List): Protocols whitelist to print
+            offset (int): Ethernet offset
+
+        Returns:
+            result (Dict): The decode result
+        '''
         ipv6_header = Protocols.IPV6_HEADER.unpack_from(message, offset)
         misc, payload_len, next_header, hop_limit, source_address, destination_address = ipv6_header
 
@@ -90,6 +209,7 @@ class Protocols():
         source_address = str(ipaddress.IPv6Address(source_address))
         destination_address = str(ipaddress.IPv6Address(destination_address))
 
+        Protocols.perf_internet_layer["IPv6"] += 1
         result = {}
         if "IPv6" in display:
             result.update({"Version": version,
@@ -123,6 +243,16 @@ class Protocols():
 
     @staticmethod
     def decode_ipv4(message, display: List, offset: int) -> Dict:
+        '''Decode IPv4 packet
+
+        Args:
+            message (bytes): The recieved data from the socket
+            display (List): Protocols whitelist to print
+            offset (int): Ethernet offset
+
+        Returns:
+            result (Dict): The decode result
+        '''
         ipv4_header = Protocols.IPV4_HEADER.unpack_from(message, offset)
         version_ihl, type_of_service, total_lenght, identifier, flags_offset, ttl, protocol, checksum, source_addr, dest_addr = ipv4_header
 
@@ -135,6 +265,7 @@ class Protocols():
         source_addr = inet_ntoa(source_addr)
         dest_addr = inet_ntoa(dest_addr)
 
+        Protocols.perf_internet_layer["IPv4"] += 1
         result = {}
         if "IPv4" in display:
             result.update({"Version": version,
@@ -172,8 +303,23 @@ class Protocols():
 
     @staticmethod
     def decode_icmp(message, display: List, offset: int) -> Dict:
+        '''Decode ICMP packet
+
+        Args:
+            message (bytes): The recieved data from the socket
+            display (List): Protocols whitelist to print
+            offset (int): Ethernet + IPv4 offset
+
+        Returns:
+            result (Dict): The decode result
+        '''
         icmp_header = Protocols.ICMP_HEADER.unpack_from(message, offset)
         icmp_type, code, checksum = icmp_header
+
+        if icmp_type == 6:
+            Protocols.perf_internet_layer["ICMPv6"] += 1
+        else:
+            Protocols.perf_internet_layer["ICMP"] += 1
 
         result = {}
         if "ICMP" in display or "ICMPv6" in display:
@@ -184,14 +330,25 @@ class Protocols():
 
     @staticmethod
     def decode_tcp(message, display: List, offset: int) -> Dict:
+        '''Decode TCP packet
+
+        Args:
+            message (bytes): The recieved data from the socket
+            display (List): Protocols whitelist to print
+            offset (int): Ethernet + IPv4 offset
+
+        Returns:
+            result (Dict): The decode result
+        '''
         tcp_header = Protocols.TCP_HEADER.unpack_from(message, offset)
-        source_port, dest_port, seq, ack, header_len, flags, window, checksum, urgent_pointer = tcp_header
+        s_port, d_port, seq, ack, header_len, flags, window, checksum, urgent_pointer = tcp_header
         header_len = header_len >> 4
 
+        Protocols.perf_transport_layer["TCP"] += 1
         result = {}
         if "TCP" in display:
-            result.update({"Source port": source_port,
-                           "Destination port": dest_port,
+            result.update({"Source port": s_port,
+                           "Destination port": d_port,
                            "Seq": seq,
                            "Ack": ack,
                            "Header length": header_len,
@@ -199,20 +356,46 @@ class Protocols():
                            "Window": window,
                            "Checksum": checksum,
                            "Urgent pointer": urgent_pointer})
+            try:
+                result.update(
+                    {"Aplication": Protocols.perf_application_layer[Protocols.alias[s_port]]})
+            except KeyError:
+                result.update({"Aplication": "UNKNOWN"})
+
+        try:
+            Protocols.perf_application_layer[Protocols.alias[s_port]] += 1
+        except KeyError:
+            Protocols.perf_application_layer["UNKNOWN"] += 1
 
         return result
 
     @staticmethod
     def decode_udp(message, display: List, offset: int) -> Dict:
+        '''Decode UDP packet
+
+        Args:
+            message (bytes): The recieved data from the socket
+            display (List): Protocols whitelist to print
+            offset (int): Ethernet + IPv4 offset
+
+        Returns:
+            result (Dict): The decode result
+        '''
         udp_header = Protocols.UDP_HEADER.unpack_from(message, offset)
         source_port, dest_port, length, chekcsum = udp_header
 
+        Protocols.perf_transport_layer["UDP"] += 1
         result = {}
         if "UDP" in display:
             result.update({"Source port": source_port,
                            "Destination port": dest_port,
                            "Length": length,
                            "Checksum": chekcsum})
+            try:
+                result.update(
+                    {"Aplication": Protocols.perf_application_layer[Protocols.alias[source_port]]})
+            except KeyError:
+                result.update({"Aplication": "UNKNOWN"})
 
         if source_port == 53:
             dns_header = Protocols.decode_dns(
@@ -220,10 +403,25 @@ class Protocols():
             if dns_header:
                 result.update({"DNS": dns_header})
 
+        try:
+            Protocols.perf_application_layer[Protocols.alias[source_port]] += 1
+        except KeyError:
+            Protocols.perf_application_layer["UNKNOWN"] += 1
+
         return result
 
     @staticmethod
     def decode_dns(message, display: List, offset: int) -> Dict:
+        '''Decode ICMP packet
+
+        Args:
+            message (bytes): The recieved data from the socket
+            display (List): Protocols whitelist to print
+            offset (int): Ethernet + IPv4 + DNS offset
+
+        Returns:
+            result (Dict): The decode result
+        '''
         dns_header = Protocols.DNS_HEADER.unpack_from(message, offset)
 
         dnsid, misc, qdcount, ancount, nscount, arcount = dns_header
@@ -237,6 +435,7 @@ class Protocols():
         z = (misc & 0x70) >> 4
         rcode = misc & 0xF
 
+        Protocols.perf_application_layer["DNS"] += 1
         result = {}
         if "DNS" in display:
             result.update({"Id": dnsid,
