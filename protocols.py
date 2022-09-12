@@ -105,6 +105,24 @@ class Protocols():
                            "source_address": source_address,
                            "destination_address": destination_address})
 
+        if next_header == 58:
+            icmpv6_header = Protocols.decode_icmp(
+                message, display, offset+Protocols.IPV6_HEADER.size)
+            if icmpv6_header:
+                result.update({"ICMPV6": icmpv6_header})
+
+        if next_header == 6:
+            tcp_header = Protocols.decode_tcp(
+                message, display, offset+Protocols.IPV6_HEADER.size)
+            if tcp_header:
+                result.update({"TCP": tcp_header})
+
+        if next_header == 17:
+            udp_header = Protocols.decode_udp(
+                message, display, offset+Protocols.IPV6_HEADER.size)
+            if udp_header:
+                result.update({"UDP": udp_header})
+
         return result
 
     @staticmethod
@@ -157,7 +175,7 @@ class Protocols():
         return result
 
     @staticmethod
-    def decode_icmp(message, display: List, offset: int) -> Dict:
+    def decode_icmp(message, display:List, offset: int) -> Dict:
         icmp_header = Protocols.ICMP_HEADER.unpack_from(message, offset)
         icmp_type, code, checksum = icmp_header
 
