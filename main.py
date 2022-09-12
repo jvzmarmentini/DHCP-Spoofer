@@ -12,7 +12,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('-d',
                         '--display',
-                        dest='display', 
+                        dest='display',
                         nargs='+',
                         help='Whitelist protocols for display')
     display = parser.parse_args().display[0]
