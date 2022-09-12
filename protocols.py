@@ -27,6 +27,82 @@ class Protocols():
     UDP_HEADER = Struct("!4H")
     DNS_HEADER = Struct("!6H")
 
+    network_access_layer = 0
+    perf_internet_layer = {"ARP": 0,
+                           "IPv4": 0,
+                           "IPv6": 0,
+                           "ICMP": 0,
+                           "ICMPv6": 0}
+    perf_transport_layer = {"TCP": 0,
+                            "UDP": 0}
+
+    alias = {7: 'ECHO',
+             19: 'CHARGEN',
+             20: 'FTP-DATA',
+             21: 'FTP-CONTROL',
+             22: 'SSH',
+             23: 'TELNET',
+             25: 'SMTP',
+             37: 'TIME',
+             53: 'DOMAIN',
+             67: 'BOOTPS (DHCP)',
+             68: 'BOOTPC (DHCP)',
+             69: 'TFTP',
+             79: 'FINGER',
+             80: 'HTTP',
+             110: 'POP3',
+             111: 'SUNRPC',
+             119: 'NNTP',
+             137: 'NETBIOS-NS',
+             128: 'NETBIOS-DGM',
+             139: 'NETBIOS-SSN',
+             143: 'IMAP',
+             161: 'SNMP',
+             162: 'SNMP-TRAP',
+             179: 'BGP',
+             389: 'LDAP',
+             443: 'HTTPS',
+             445: 'MICROSOFT-DS',
+             500: 'ISAKMP',
+             514: 'SYSLOG',
+             520: 'RIP',
+             1080: 'SOCKS',
+             33434: 'TRACEROUTE'}
+    perf_application_layer = {"BGP": 0,
+                              "BOOTPC (DHCP)": 0,
+                              "BOOTPS (DHCP)": 0,
+                              "CHARGEN": 0,
+                              "DNS": 0,
+                              "DOMAIN": 0,
+                              "ECHO": 0,
+                              "FINGER": 0,
+                              "FTP-CONTROL": 0,
+                              "FTP-DATA": 0,
+                              "HTTP": 0,
+                              "HTTPS": 0,
+                              "IMAP": 0,
+                              "ISAKMP": 0,
+                              "LDAP": 0,
+                              "MICROSOFT-DS": 0,
+                              "NETBIOS-DGM": 0,
+                              "NETBIOS-NS": 0,
+                              "NETBIOS-SSN": 0,
+                              "NNTP": 0,
+                              "POP3": 0,
+                              "RIP": 0,
+                              "SMTP": 0,
+                              "SNMP-TRAP": 0,
+                              "SNMP": 0,
+                              "SOCKS": 0,
+                              "SSH": 0,
+                              "SUNRPC": 0,
+                              "SYSLOG": 0,
+                              "TELNET": 0,
+                              "TFTP": 0,
+                              "TIME": 0,
+                              "TRACEROUTE": 0,
+                              "UNKNOWN": 0}
+
     @staticmethod
     def decode_eth(message, display: List) -> Dict:
         '''Decode ethernet packet
@@ -43,6 +119,7 @@ class Protocols():
         dest_address = Protocols.format_mac(dest_address)
         source_address = Protocols.format_mac(source_address)
 
+        Protocols.network_access_layer += 1
         result = {}
         if "ETH" in display:
             result.update({"Destine address": dest_address,
@@ -95,6 +172,7 @@ class Protocols():
         source_prot_addr = inet_ntoa(arp_header[6])
         target_prot_addr = inet_ntoa(arp_header[8])
 
+        Protocols.perf_internet_layer["ARP"] += 1
         result = {}
         if "ARP" in display:
             result.update({"Hardware type": hdw_type,
@@ -131,6 +209,7 @@ class Protocols():
         source_address = str(ipaddress.IPv6Address(source_address))
         destination_address = str(ipaddress.IPv6Address(destination_address))
 
+        Protocols.perf_internet_layer["IPv6"] += 1
         result = {}
         if "IPv6" in display:
             result.update({"Version": version,
@@ -186,6 +265,7 @@ class Protocols():
         source_addr = inet_ntoa(source_addr)
         dest_addr = inet_ntoa(dest_addr)
 
+        Protocols.perf_internet_layer["IPv4"] += 1
         result = {}
         if "IPv4" in display:
             result.update({"Version": version,
@@ -236,6 +316,11 @@ class Protocols():
         icmp_header = Protocols.ICMP_HEADER.unpack_from(message, offset)
         icmp_type, code, checksum = icmp_header
 
+        if icmp_type == 6:
+            Protocols.perf_internet_layer["ICMPv6"] += 1
+        else:
+            Protocols.perf_internet_layer["ICMP"] += 1
+
         result = {}
         if "ICMP" in display or "ICMPv6" in display:
             result.update({"Type": icmp_type,
@@ -259,6 +344,7 @@ class Protocols():
         s_port, d_port, seq, ack, header_len, flags, window, checksum, urgent_pointer = tcp_header
         header_len = header_len >> 4
 
+        Protocols.perf_transport_layer["TCP"] += 1
         result = {}
         if "TCP" in display:
             result.update({"Source port": s_port,
@@ -270,6 +356,16 @@ class Protocols():
                            "Window": window,
                            "Checksum": checksum,
                            "Urgent pointer": urgent_pointer})
+            try:
+                result.update(
+                    {"Aplication": Protocols.perf_application_layer[Protocols.alias[s_port]]})
+            except KeyError:
+                result.update({"Aplication": "UNKNOWN"})
+
+        try:
+            Protocols.perf_application_layer[Protocols.alias[s_port]] += 1
+        except KeyError:
+            Protocols.perf_application_layer["UNKNOWN"] += 1
 
         return result
 
@@ -288,18 +384,29 @@ class Protocols():
         udp_header = Protocols.UDP_HEADER.unpack_from(message, offset)
         source_port, dest_port, length, chekcsum = udp_header
 
+        Protocols.perf_transport_layer["UDP"] += 1
         result = {}
         if "UDP" in display:
             result.update({"Source port": source_port,
                            "Destination port": dest_port,
                            "Length": length,
                            "Checksum": chekcsum})
+            try:
+                result.update(
+                    {"Aplication": Protocols.perf_application_layer[Protocols.alias[source_port]]})
+            except KeyError:
+                result.update({"Aplication": "UNKNOWN"})
 
         if source_port == 53:
             dns_header = Protocols.decode_dns(
                 message, display, offset+Protocols.UDP_HEADER.size)
             if dns_header:
                 result.update({"DNS": dns_header})
+
+        try:
+            Protocols.perf_application_layer[Protocols.alias[source_port]] += 1
+        except KeyError:
+            Protocols.perf_application_layer["UNKNOWN"] += 1
 
         return result
 
@@ -328,6 +435,7 @@ class Protocols():
         z = (misc & 0x70) >> 4
         rcode = misc & 0xF
 
+        Protocols.perf_application_layer["DNS"] += 1
         result = {}
         if "DNS" in display:
             result.update({"Id": dnsid,

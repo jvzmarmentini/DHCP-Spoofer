@@ -37,16 +37,35 @@ def main() -> None:
                         choices=['ETH', 'ARP', 'IPv6', 'IPv4', 'ICMP', 'TCP', 'UDP', 'DNS'])
     display = parser.parse_args().wlist[0]
     i = 0
-    while True:
-        packet, _ = soc.recvfrom(4096)
-        eth_header = Protocols.decode_eth(packet, display)
 
-        if eth_header:
-            print(f"[>] Frame #{i}")
-            dumpclean({"ETH": eth_header})
-            print()
+    try:
+        while True:
+            packet, _ = soc.recvfrom(4096)
+            eth_header = Protocols.decode_eth(packet, display)
 
-        i += 1
+            if eth_header:
+                print(f"[>] Frame #{i}")
+                dumpclean({"ETH": eth_header})
+                print()
+
+            i += 1
+    except KeyboardInterrupt:
+        total = Protocols.network_access_layer
+        print(f"\nTotal captured packets: {total}")
+
+        print("Internet layer:")
+        for protocol_name, calls in Protocols.perf_internet_layer.items():
+            print(f"    {protocol_name} represents {calls/total * 100:.2f}%")
+
+        print("Transport layer:")
+        for protocol_name, calls in Protocols.perf_transport_layer.items():
+            print(f"    {protocol_name} represents {calls/total * 100:.2f}%")
+
+        print("Application layer:")
+        for protocol_name, calls in Protocols.perf_application_layer.items():
+            if calls != 0:
+                print(
+                    f"    {protocol_name} represents {calls/total * 100:.2f}%")
 
 
 if __name__ == "__main__":
