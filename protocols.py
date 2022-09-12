@@ -10,7 +10,7 @@ class Protocols():
     ARP_HEADER = Struct("2s2s1s1s2s6s4s6s4s")
     IPV6_HEADER = Struct("!4sHBB16s16s")
     IPV4_HEADER = Struct("!2B3H2BH4s4s")
-    ICMP_HEADER = Struct("!2BH4s")
+    ICMP_HEADER = Struct("!BBH")
     TCP_HEADER = Struct("!2H2I2B3H")
     UDP_HEADER = Struct("!4H")
     DNS_HEADER = Struct("!6H")
@@ -81,7 +81,6 @@ class Protocols():
 
     @staticmethod
     def decode_ipv6(message, display:List, offset: int) -> Dict:
-        print("\o/")
         ipv6_header = Protocols.IPV6_HEADER.unpack_from(message, offset)
         misc, payload_len, next_header, hop_limit, source_address, destination_address = ipv6_header
 
@@ -154,11 +153,11 @@ class Protocols():
     @staticmethod
     def decode_icmp(message, display:List, offset: int) -> Dict:
         icmp_header = Protocols.ICMP_HEADER.unpack_from(message, offset)
-        type, code, checksum = icmp_header
+        icmp_type, code, checksum = icmp_header
 
         result = {}
         if "ICMP" in display:
-            result.update({"type": type,
+            result.update({"type": icmp_type,
                            "code": code,
                            "checksum": checksum})
         return result
