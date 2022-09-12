@@ -3,9 +3,6 @@ from socket import inet_ntoa
 from struct import Struct
 from typing import Dict, List
 
-# TODO
-# ICMP with execption, test with ping
-
 
 class Protocols():
     ETH_HEADER = Struct("!6s6sH")
@@ -26,21 +23,21 @@ class Protocols():
 
         result = {}
         if "ETH" in display:
-            result.update({"dest_address": dest_address,
-                           "source_address": source_address,
-                           "network_proto": network_proto})
+            result.update({"Destine address": dest_address,
+                           "Source address": source_address,
+                           "Network protocol": network_proto})
 
         if network_proto == 2048:
             ipv4_header = Protocols.decode_ipv4(
                 message, display, Protocols.ETH_HEADER.size)
             if ipv4_header:
-                result.update({"IPV4": ipv4_header})
+                result.update({"IPv4": ipv4_header})
 
         if network_proto == 34525:
             ipv6_header = Protocols.decode_ipv6(
                 message, display, Protocols.ETH_HEADER.size)
             if ipv6_header:
-                result.update({"IPV6": ipv6_header})
+                result.update({"IPv6": ipv6_header})
 
         if network_proto == 2054:
             arp_header = Protocols.decode_arp(
@@ -53,13 +50,13 @@ class Protocols():
     @staticmethod
     def decode_arp(message, display: List, offset: int) -> Dict:
         arp_header = Protocols.ARP_HEADER.unpack_from(message, offset)
-        hdw_type, prot_type, hdw_type_len, prot_type_len, op, source_hdw_addr, source_prot_addr, target_hdw_addr, target_prot_addr = arp_header
+        hdw_type, prot_type, hdw_type_len, prot_type_len, operation, source_hdw_addr, source_prot_addr, target_hdw_addr, target_prot_addr = arp_header
 
         hdw_type = int.from_bytes(hdw_type, "big")
         prot_type = int.from_bytes(prot_type, "big")
-        hdw_type_len = int.from_bytes(hdw_type_len, "little")
-        prot_type_len = int.from_bytes(prot_type_len, "little")
-        op = int.from_bytes(op, "little")
+        hdw_type_len = int.from_bytes(hdw_type_len, "big")
+        prot_type_len = int.from_bytes(prot_type_len, "big")
+        operation = int.from_bytes(operation, "big")
 
         source_hdw_addr = Protocols.format_mac(source_hdw_addr)
         target_hdw_addr = Protocols.format_mac(target_hdw_addr)
@@ -69,15 +66,15 @@ class Protocols():
 
         result = {}
         if "ARP" in display:
-            result.update({"hardware_type": hdw_type,
-                           "protocol_type": prot_type,
-                           "hardware_type_len": hdw_type_len,
-                           "protocol_type_len": prot_type_len,
-                           "operation": op,
-                           "source_hardware_addr": source_hdw_addr,
-                           "source_protocol_addr": source_prot_addr,
-                           "target_hardware_addr": target_hdw_addr,
-                           "target_protocol_addr": target_prot_addr})
+            result.update({"Hardware type": hdw_type,
+                           "Protocol type": prot_type,
+                           "Hardware type len": hdw_type_len,
+                           "Protocol type len": prot_type_len,
+                           "Pperation": operation,
+                           "Source hardware addr": source_hdw_addr,
+                           "Source protocol addr": source_prot_addr,
+                           "Target hardware addr": target_hdw_addr,
+                           "Target protocol addr": target_prot_addr})
 
         return result
 
@@ -89,27 +86,26 @@ class Protocols():
         version = misc >> 28
         traffic_class = (misc & 0x7F) >> 21
         flow_label = misc & 0x1FFFFF
-        
-        
+
         source_address = str(ipaddress.IPv6Address(source_address))
         destination_address = str(ipaddress.IPv6Address(destination_address))
 
         result = {}
-        if "IPV6" in display:
-            result.update({"version": version,
-                           "traffic_class": traffic_class,
-                           "flow_label": flow_label,
-                           "payload_len": payload_len,
-                           "next_header": next_header,
-                           "hop_limit": hop_limit,
-                           "source_address": source_address,
-                           "destination_address": destination_address})
+        if "IPv6" in display:
+            result.update({"Version": version,
+                           "Traffic class": traffic_class,
+                           "Flow label": flow_label,
+                           "Payload length": payload_len,
+                           "Next header": next_header,
+                           "Hop limit": hop_limit,
+                           "Source address": source_address,
+                           "Destination address": destination_address})
 
         if next_header == 58:
             icmpv6_header = Protocols.decode_icmp(
                 message, display, offset+Protocols.IPV6_HEADER.size)
             if icmpv6_header:
-                result.update({"ICMPV6": icmpv6_header})
+                result.update({"ICMPv6": icmpv6_header})
 
         if next_header == 6:
             tcp_header = Protocols.decode_tcp(
@@ -140,19 +136,19 @@ class Protocols():
         dest_addr = inet_ntoa(dest_addr)
 
         result = {}
-        if "IPV4" in display:
-            result.update({"version": version,
-                           "ihl": ihl,
+        if "IPv4" in display:
+            result.update({"Version": version,
+                           "Ihl": ihl,
                            "ToS": type_of_service,
-                           "total_lenght": total_lenght,
-                           "identifier": identifier,
-                           "flags": flags,
-                           "offset": off_set,
-                           "ttl": ttl,
-                           "protocol": protocol,
-                           "checksum": checksum,
-                           "source_addr": source_addr,
-                           "dest_addr": dest_addr})
+                           "Total lenght": total_lenght,
+                           "Identifier": identifier,
+                           "Flags": flags,
+                           "Offset": off_set,
+                           "Ttl": ttl,
+                           "Protocol": protocol,
+                           "Checksum": checksum,
+                           "Source address": source_addr,
+                           "Destination address": dest_addr})
 
         if protocol == 1:
             icmp_header = Protocols.decode_icmp(
@@ -175,15 +171,15 @@ class Protocols():
         return result
 
     @staticmethod
-    def decode_icmp(message, display:List, offset: int) -> Dict:
+    def decode_icmp(message, display: List, offset: int) -> Dict:
         icmp_header = Protocols.ICMP_HEADER.unpack_from(message, offset)
         icmp_type, code, checksum = icmp_header
 
         result = {}
-        if "ICMP" in display:
-            result.update({"type": icmp_type,
-                           "code": code,
-                           "checksum": checksum})
+        if "ICMP" in display or "ICMPv6" in display:
+            result.update({"Type": icmp_type,
+                           "Code": code,
+                           "Checksum": checksum})
         return result
 
     @staticmethod
@@ -194,15 +190,15 @@ class Protocols():
 
         result = {}
         if "TCP" in display:
-            result.update({"source_port": source_port,
-                           "dest_port": dest_port,
-                           "seq": seq,
-                           "ack": ack,
-                           "header_len": header_len,
-                           "flags": flags,
-                           "window": window,
-                           "checksum": checksum,
-                           "urgent_pointer": urgent_pointer})
+            result.update({"Source port": source_port,
+                           "Destination port": dest_port,
+                           "Seq": seq,
+                           "Ack": ack,
+                           "Header length": header_len,
+                           "Flags": flags,
+                           "Window": window,
+                           "Checksum": checksum,
+                           "Urgent pointer": urgent_pointer})
 
         return result
 
@@ -213,10 +209,10 @@ class Protocols():
 
         result = {}
         if "UDP" in display:
-            result.update({"source_port": source_port,
-                           "dest_port": dest_port,
-                           "length": length,
-                           "checksum": chekcsum})
+            result.update({"Source port": source_port,
+                           "Destination port": dest_port,
+                           "Length": length,
+                           "Checksum": chekcsum})
 
         if source_port == 53:
             dns_header = Protocols.decode_dns(
@@ -243,20 +239,20 @@ class Protocols():
 
         result = {}
         if "DNS" in display:
-            result.update({"id": dnsid,
-                           "is_response": qr,
-                           "opcode": opcode,
-                           "is_authoritative": aa,
-                           "is_truncated": tc,
-                           "recursion_desired": rd,
-                           "recursion_available": ra,
-                           "reserved": z,
-                           "response_code": rcode,
-                           "question_count": qdcount,
-                           "answer_count": ancount,
-                           "authority_count": nscount,
-                           "additional_count": arcount,
-                           "questions": "not supported"})
+            result.update({"Id": dnsid,
+                           "Is response": qr,
+                           "Opcode": opcode,
+                           "Is authoritative": aa,
+                           "Is truncated": tc,
+                           "Recursion desired": rd,
+                           "Recursion available": ra,
+                           "Reserved": z,
+                           "Response code": rcode,
+                           "Question count": qdcount,
+                           "Answer count": ancount,
+                           "Authority count": nscount,
+                           "Additional count": arcount,
+                           "Questions": None})
 
         return result
 
