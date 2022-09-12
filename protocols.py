@@ -1,10 +1,13 @@
 from socket import inet_ntoa
 from struct import Struct
-from typing import Dict
+from typing import Dict, List
 
+# TODO
+# ICMP with execption, test with ping
 
 class Protocols():
     ETH_HEADER = Struct("!6s6sH")
+    ARP_HEADER = Struct("2s2s1s1s2s6s4s6s4s")
     IPV6_HEADER = Struct("!4sHBB16s16s")
     IPV4_HEADER = Struct("!2B3H2BH4s4s")
     ICMP_HEADER = Struct("!2BH4s")
@@ -13,7 +16,7 @@ class Protocols():
     DNS_HEADER = Struct("!6H")
 
     @staticmethod
-    def decode_eth(message, display=[]) -> Dict:
+    def decode_eth(message, display:List) -> Dict:
         eth_header = Protocols.ETH_HEADER.unpack_from(message)
         dest_address, source_address, network_proto = eth_header
         dest_address = Protocols.format_mac(dest_address)
@@ -37,10 +40,48 @@ class Protocols():
             if ipv6_header:
                 result.update({"IPV6": ipv6_header})
                 
+        if network_proto == 2054:
+            arp_header = Protocols.decode_arp(
+                message, display, Protocols.ETH_HEADER.size)
+            if arp_header:
+                result.update({"ARP": arp_header})
+
         return result
 
     @staticmethod
-    def decode_ipv6(message, display=[], offset: int = 0) -> Dict:
+    def decode_arp(message, display:List, offset: int) -> Dict:
+        arp_header = Protocols.ARP_HEADER.unpack_from(message, offset)
+        hdw_type, prot_type, hdw_type_len, prot_type_len, op, source_hdw_addr, source_prot_addr, target_hdw_addr, target_prot_addr = arp_header
+
+        hdw_type = int.from_bytes(hdw_type, "little")
+        prot_type = int.from_bytes(prot_type, "little")
+        hdw_type_len = int.from_bytes(hdw_type_len, "little")
+        prot_type_len = int.from_bytes(prot_type_len, "little")
+        op = int.from_bytes(op, "little")
+
+        source_hdw_addr = Protocols.format_mac(source_hdw_addr)
+        target_hdw_addr = Protocols.format_mac(target_hdw_addr)
+        
+        source_prot_addr = inet_ntoa(source_prot_addr)
+        target_prot_addr = inet_ntoa(target_prot_addr)
+
+        result = {}
+        if "ARP" in display:
+            result.update({"hardware_type": hdw_type,
+                           "protocol_type": prot_type,
+                           "hardware_type_len": hdw_type_len,
+                           "protocol_type_len": prot_type_len,
+                           "operation": op,
+                           "source_hardware_addr": source_hdw_addr,
+                           "source_protocol_addr": source_prot_addr,
+                           "target_hardware_addr": target_hdw_addr,
+                           "target_protocol_addr": target_prot_addr})
+            
+        return result
+
+    @staticmethod
+    def decode_ipv6(message, display:List, offset: int) -> Dict:
+        print("\o/")
         ipv6_header = Protocols.IPV6_HEADER.unpack_from(message, offset)
         misc, payload_len, next_header, hop_limit, source_address, destination_address = ipv6_header
 
@@ -62,15 +103,15 @@ class Protocols():
         return result
 
     @staticmethod
-    def decode_ipv4(message, display=[], offset: int = 0) -> Dict:
+    def decode_ipv4(message, display:List, offset: int) -> Dict:
         ipv4_header = Protocols.IPV4_HEADER.unpack_from(message, offset)
         version_ihl, type_of_service, total_lenght, identifier, flags_offset, ttl, protocol, checksum, source_addr, dest_addr = ipv4_header
-        
+
         version = version_ihl >> 4
         ihl = version_ihl & 0xF
 
         flags = flags_offset >> 13
-        offset = flags_offset & 0x7FF
+        off_set = flags_offset & 0x7FF
 
         source_addr = inet_ntoa(source_addr)
         dest_addr = inet_ntoa(dest_addr)
@@ -83,7 +124,7 @@ class Protocols():
                            "total_lenght": total_lenght,
                            "identifier": identifier,
                            "flags": flags,
-                           "offset": offset,
+                           "offset": off_set,
                            "ttl": ttl,
                            "protocol": protocol,
                            "checksum": checksum,
@@ -92,26 +133,26 @@ class Protocols():
 
         if protocol == 1:
             icmp_header = Protocols.decode_icmp(
-                message, display, Protocols.IPV4_HEADER.size)
+                message, display, offset+Protocols.IPV4_HEADER.size)
             if icmp_header:
                 result.update({"ICMP": icmp_header})
 
         if protocol == 6:
             tcp_header = Protocols.decode_tcp(
-                message, display, Protocols.IPV4_HEADER.size)
+                message, display, offset+Protocols.IPV4_HEADER.size)
             if tcp_header:
                 result.update({"TCP": tcp_header})
 
         if protocol == 17:
             udp_header = Protocols.decode_udp(
-                message, display, Protocols.IPV4_HEADER.size)
+                message, display, offset+Protocols.IPV4_HEADER.size)
             if udp_header:
                 result.update({"UDP": udp_header})
 
         return result
 
     @staticmethod
-    def decode_icmp(message, display=[], offset: int = 0) -> Dict:
+    def decode_icmp(message, display:List, offset: int) -> Dict:
         icmp_header = Protocols.ICMP_HEADER.unpack_from(message, offset)
         type, code, checksum = icmp_header
 
@@ -123,7 +164,7 @@ class Protocols():
         return result
 
     @staticmethod
-    def decode_tcp(message, display=[], offset: int = 0) -> Dict:
+    def decode_tcp(message, display:List, offset: int) -> Dict:
         tcp_header = Protocols.TCP_HEADER.unpack_from(message, offset)
         source_port, dest_port, seq, ack, header_len, flags, window, checksum, urgent_pointer = tcp_header
         header_len = header_len >> 4
@@ -143,7 +184,7 @@ class Protocols():
         return result
 
     @staticmethod
-    def decode_udp(message, display=[], offset: int = 0) -> Dict:
+    def decode_udp(message, display:List, offset: int) -> Dict:
         udp_header = Protocols.UDP_HEADER.unpack_from(message, offset)
         source_port, dest_port, length, chekcsum = udp_header
 
@@ -156,14 +197,14 @@ class Protocols():
 
         if source_port == 53:
             dns_header = Protocols.decode_dns(
-                message, display, Protocols.UDP_HEADER.size)
+                message, display, offset+Protocols.UDP_HEADER.size)
             if dns_header:
                 result.update({"DNS": dns_header})
 
         return result
 
     @staticmethod
-    def decode_dns(message, display=[], offset: int = 0) -> Dict:
+    def decode_dns(message, display:List, offset: int) -> Dict:
         dns_header = Protocols.DNS_HEADER.unpack_from(message, offset)
 
         dnsid, misc, qdcount, ancount, nscount, arcount = dns_header

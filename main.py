@@ -21,7 +21,6 @@ def main():
         # For best match with hardware and network realities, bufsize should be a relatively small power of 2, for example, 4096.
         packet = soc.recvfrom(4096)[0]
         eth_header = Protocols.decode_eth(packet, display)
-
         if eth_header:
             print("ETH", json.dumps(eth_header, indent=4))
 
