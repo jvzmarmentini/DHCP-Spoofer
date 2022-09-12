@@ -358,7 +358,7 @@ class Protocols():
                            "Urgent pointer": urgent_pointer})
             try:
                 result.update(
-                    {"Aplication": Protocols.perf_application_layer[Protocols.alias[s_port]]})
+                    {"Aplication": Protocols.alias[s_port]})
             except KeyError:
                 result.update({"Aplication": "UNKNOWN"})
 
@@ -393,7 +393,7 @@ class Protocols():
                            "Checksum": chekcsum})
             try:
                 result.update(
-                    {"Aplication": Protocols.perf_application_layer[Protocols.alias[source_port]]})
+                    {"Aplication": Protocols.alias[source_port]})
             except KeyError:
                 result.update({"Aplication": "UNKNOWN"})
 
