@@ -2,6 +2,7 @@ import ipaddress
 from socket import inet_ntoa
 from struct import Struct
 from typing import Dict, List
+from unittest import result
 
 
 class Protocols():
@@ -26,7 +27,7 @@ class Protocols():
     TCP_HEADER = Struct("!2H2I2B3H")
     UDP_HEADER = Struct("!4H")
     DNS_HEADER = Struct("!6H")
-    DHCP_HEADER = Struct("!4BI2H4s4s4s4s16s64s128s")
+    DHCP_HEADER = Struct("!4BI2H4s4s4s4s16s64s128sI3s")
 
     network_access_layer = 0
     perf_internet_layer = {"ARP": 0,
@@ -426,8 +427,25 @@ class Protocols():
         siaddr = inet_ntoa(dhcp_header[9])
         giaddr = inet_ntoa(dhcp_header[10])
         chaddr = Protocols.format_mac(dhcp_header[11])
-        sname = dhcp_header[12]
-        bootf = dhcp_header[13]
+        sname = Protocols.format_byte_array(dhcp_header[12])
+        bootf = Protocols.format_byte_array(dhcp_header[13])
+        mcookie = hex(dhcp_header[14])
+        offset = offset+Protocols.DHCP_HEADER.size
+        # TODO: options not working... revisit this piece of code
+        options = {}
+        import pdb; pdb.set_trace()
+        while(True):
+            opt, len = Struct("!ss").unpack_from(message, offset)
+            len = int.from_bytes(len, "big")
+            opres = None
+            for _ in range(len):
+                opres += Struct("!s").unpack_from(message, offset)
+            result.update({"opt":opt,
+                            "len":len,
+                            "opres":opres})
+            offset += 2 + len
+
+        
 
         # Protocols.perf_transport_layer["DHCP"] += 1
         result = {}
@@ -445,7 +463,8 @@ class Protocols():
                            "giaddr": giaddr,
                            "chaddr": chaddr,
                            "sname": sname,
-                           "bootf": bootf})
+                           "bootf": bootf,
+                           "magic cookie": mcookie})
 
         return result
 
@@ -495,3 +514,10 @@ class Protocols():
     @staticmethod
     def format_mac(mac_addr):
         return ':'.join(mac_addr.hex()[i:i+2] for i in range(0, len(mac_addr.hex()), 2))
+
+    @staticmethod
+    def format_byte_array(array):
+        for i in array:
+            if i != 0:
+                return array
+        return "not given"
