@@ -34,7 +34,7 @@ def main() -> None:
                         dest='wlist',
                         nargs='+',
                         help="Whitelist protocols for display",
-                        choices=['ETH', 'ARP', 'IPv6', 'IPv4', 'ICMP', 'TCP', 'UDP', 'DNS'])
+                        choices=['ETH', 'ARP', 'IPv6', 'IPv4', 'ICMP', 'TCP', 'UDP', 'DNS', 'DHCP'])
     display = parser.parse_args().wlist[0]
     i = 0
 
