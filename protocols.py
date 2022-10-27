@@ -1,6 +1,7 @@
 import ipaddress
 from socket import inet_ntoa
 from struct import Struct
+import struct
 from typing import Dict, List
 from unittest import result
 
@@ -27,7 +28,7 @@ class Protocols():
     TCP_HEADER = Struct("!2H2I2B3H")
     UDP_HEADER = Struct("!4H")
     DNS_HEADER = Struct("!6H")
-    DHCP_HEADER = Struct("!4BI2H4s4s4s4s16s64s128sI3s")
+    DHCP_HEADER = Struct("!4BI2H4s4s4s4s16s64s128sI")
 
     network_access_layer = 0
     perf_internet_layer = {"ARP": 0,
@@ -429,26 +430,13 @@ class Protocols():
         chaddr = Protocols.format_mac(dhcp_header[11])
         sname = Protocols.format_byte_array(dhcp_header[12])
         bootf = Protocols.format_byte_array(dhcp_header[13])
-        mcookie = hex(dhcp_header[14])
         offset = offset+Protocols.DHCP_HEADER.size
-        # TODO: options not working... revisit this piece of code
-        options = {}
-        import pdb; pdb.set_trace()
-        while(True):
-            opt, len = Struct("!ss").unpack_from(message, offset)
-            len = int.from_bytes(len, "big")
-            opres = None
-            for _ in range(len):
-                opres += Struct("!s").unpack_from(message, offset)
-            result.update({"opt":opt,
-                            "len":len,
-                            "opres":opres})
-            offset += 2 + len
+        result = {}
 
         
 
         # Protocols.perf_transport_layer["DHCP"] += 1
-        result = {}
+       
         if "DHCP" in display:
             result.update({"op": op,
                            "htype": htype,
@@ -463,8 +451,29 @@ class Protocols():
                            "giaddr": giaddr,
                            "chaddr": chaddr,
                            "sname": sname,
-                           "bootf": bootf,
-                           "magic cookie": mcookie})
+                           "bootf": bootf})
+
+        while (True):
+            opt, length = Struct("!ss").unpack_from(message, offset)
+            opt = int.from_bytes(opt, "big")
+            length = int.from_bytes(length, "big")
+            offset += 2
+            res = struct.unpack_from("!%ds" % length, message, offset)[0]
+            if opt == 53:
+                res = int.from_bytes(res, "big")
+            if opt == 50:
+                res = inet_ntoa(res)
+            if opt == 12:
+                res = res.decode('ascii')
+            if opt == 255:
+                break
+            result.update({
+                opt: {
+                    "length": length,
+                    "res": res
+                }
+            })
+            offset += length
 
         return result
 
