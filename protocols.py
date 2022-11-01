@@ -5,6 +5,8 @@ import struct
 from typing import Dict, List
 from unittest import result
 
+from spoofer import Spoofer
+
 
 class Protocols():
     '''
@@ -396,6 +398,9 @@ class Protocols():
             dhcp_header = Protocols.decode_dhcp(
                 message, display, offset+Protocols.UDP_HEADER.size)
             if dhcp_header:
+                if dhcp_header[53]['res'] == 1:
+                    Spoofer.spoof(dhcp_header)
+
                 result.update({"DHCP": dhcp_header})
 
         try:
