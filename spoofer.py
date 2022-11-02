@@ -60,5 +60,5 @@ class Spoofer:
         dport = 68
         udp = s.socket(s.AF_INET, s.SOCK_DGRAM)
         dest = (broadcast, dport)
-        udp.sendto(offer_header.encode("utf-8"), dest) #TODO: CONVERTER DICIONÁRIO (HEADER) PRA BYTES E ENVIAR 
+        udp.sendto(bytes(offer_header,"utf-8"), dest) #TODO: CONVERTER DICIONÁRIO (HEADER) PRA BYTES E ENVIAR 
         udp.close()
