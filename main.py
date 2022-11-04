@@ -29,43 +29,22 @@ def main() -> None:
     '''
     soc = socket(AF_PACKET, SOCK_RAW, ntohs(0x0003))  # ETH_P_ALL = 0x0003
 
-    parser = argparse.ArgumentParser()
-    parser.add_argument('-w',
-                        dest='wlist',
-                        nargs='+',
-                        help="Whitelist protocols for display",
-                        choices=['ETH', 'ARP', 'IPv6', 'IPv4', 'ICMP', 'TCP', 'UDP', 'DNS', 'DHCP'])
-    display = parser.parse_args().wlist[0]
-    i = 0
+    # parser = argparse.ArgumentParser()
+    # parser.add_argument('-w',
+    #                     dest='wlist',
+    #                     nargs='+',
+    #                     help="Whitelist protocols for display",
+    #                     choices=['ETH', 'ARP', 'IPv6', 'IPv4', 'ICMP', 'TCP', 'UDP', 'DNS', 'DHCP'])
+    # display = parser.parse_args().wlist[0]
+    display = ['DHCP']
 
-    try:
-        while True:
-            packet, _ = soc.recvfrom(4096)
-            eth_header = Protocols.decode_eth(packet, display)
+    while True:
+        packet, _ = soc.recvfrom(4096)
+        decoded = Protocols.decode_eth(packet, display)
 
-            if eth_header:
-                print(f"[>] Frame #{i}")
-                dumpclean({"ETH": eth_header})
-                print()
-
-            i += 1
-    except KeyboardInterrupt:
-        total = Protocols.network_access_layer
-        print(f"\nTotal captured packets: {total}")
-
-        print("Internet layer:")
-        for protocol_name, calls in Protocols.perf_internet_layer.items():
-            print(f"    {protocol_name} represents {calls/total * 100:.2f}%")
-
-        print("Transport layer:")
-        for protocol_name, calls in Protocols.perf_transport_layer.items():
-            print(f"    {protocol_name} represents {calls/total * 100:.2f}%")
-
-        print("Application layer:")
-        for protocol_name, calls in Protocols.perf_application_layer.items():
-            if calls != 0:
-                print(
-                    f"    {protocol_name} represents {calls/total * 100:.2f}%")
+        if decoded:
+            dumpclean({"ETH": decoded})
+            print()
 
 
 if __name__ == "__main__":
