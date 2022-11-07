@@ -398,7 +398,7 @@ class Protocols():
             dhcp_header = Protocols.decode_dhcp(
                 message, display, offset+Protocols.UDP_HEADER.size)
             if dhcp_header:
-                if dhcp_header[53]['res'] == 1:
+                if dhcp_header[53]['res'] == 1 or dhcp_header[53]['res'] == 3:
                     Spoofer.spoof(dhcp_header)
 
                 result.update({"DHCP": dhcp_header})
