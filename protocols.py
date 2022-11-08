@@ -151,7 +151,22 @@ class Protocols():
 
     @staticmethod
     def decode_arp(message, display: List, offset: int) -> Dict:
-        '''Decode ARP packet
+        '''Decode ARP packet	chaddr: a4:1f:72:f5:90:a2:00:00:00:00:00:00:00:00:00:00
+	sname: not given
+	bootf: not given
+    [+]53
+	length: 1
+	res: 1
+    [+]50
+	length: 4
+	res: 10.32.143.141
+    [+]12
+	length: 8
+	res: labredes
+    [+]55
+	length: 13
+	res: b'\x01\x1c\x02\x03\x0f\x06w\x0c,/\x1ay*'
+
         Args:
             message (bytes): The recieved data from the socket
             display (List): Protocols whitelist to print
@@ -460,6 +475,7 @@ class Protocols():
 
         while (True):
             opt, length = Struct("!ss").unpack_from(message, offset)
+            print(opt)
             opt = int.from_bytes(opt, "big")
             length = int.from_bytes(length, "big")
             offset += 2
